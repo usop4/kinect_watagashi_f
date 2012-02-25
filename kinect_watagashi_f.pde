@@ -1,4 +1,13 @@
-static final int SLOWNESS = 2;
+// original
+// author: weed
+// https://gist.github.com/1862354
+
+// firmata(2012.2.25 t.uehara)
+import processing.serial.*;
+import cc.arduino.*;
+Arduino arduino;
+
+static final int SLOWNESS = 2; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
@@ -97,7 +106,11 @@ class FallingRectangle {
       // 輪の中にうまく入った場合
       x <= hRct.x & hRct.x + hRct.width <= x + this.width
       ) 
-      {
+      {    
+        //firmata(2012.2.25 t.uehara)
+        if(isFallingAroundYou == false){
+          arduino.digitalWrite(13,Arduino.HIGH);      
+        }
         isFallingAroundYou = true;
         y += SLOWNESS * 4; // x is OK
       }
@@ -135,6 +148,8 @@ class FallingRectangle {
       getCounter = 0;
       y = height + 1;
       println("You get " + clrName + " !");
+      //firmata(2012.2.25 t.uehara)
+      arduino.digitalWrite(13,Arduino.LOW);
     }
   }    
 }
@@ -151,6 +166,11 @@ void setup()
   background(0);
   num = 0;
   fall[num] = new FallingRectangle(width/2 - FALLING_RECTANGLE_WIDTH/2);
+
+  //firmata(2012.2.25 t.uehara)
+  println(Arduino.list());
+  arduino = new Arduino(this, Arduino.list()[0], 57600);  
+  arduino.pinMode(13, Arduino.OUTPUT);
 
   hRct.width = 100;
   hRct.y = 200;
