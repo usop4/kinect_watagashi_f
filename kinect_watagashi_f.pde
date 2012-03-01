@@ -114,6 +114,10 @@ class FallingRectangle {
         isFallingAroundYou = true;
         y += SLOWNESS * 4; // x is OK
       }
+      else
+      { 
+        y += SLOWNESS * 4;
+      }
     } 
     else 
     {
@@ -139,7 +143,7 @@ class FallingRectangle {
   }
   
   void drawScoringVE() {
-    if ( getCounter < SLOWNESS * 2 ) {
+    if ( getCounter < (24 / SLOWNESS)) {
       weight += SLOWNESS * 50;
       getCounter++;
       y = height;
