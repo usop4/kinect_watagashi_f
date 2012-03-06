@@ -7,6 +7,7 @@ import processing.serial.*;
 import cc.arduino.*;
 Arduino arduino;
 
+// Kinectを使うときは処理が遅くなるので4くらいが推奨
 static final int SLOWNESS = 2; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
