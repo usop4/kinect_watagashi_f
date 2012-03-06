@@ -53,9 +53,6 @@ class FallingRectangle {
         clrName = "green";
         break;
       case 2:
-        clr = color(0, 0, 255);
-        clrName = "blue";
-        break;
       case 3:
         clr = color(0, 0, 255);
         clrName = "blue";
