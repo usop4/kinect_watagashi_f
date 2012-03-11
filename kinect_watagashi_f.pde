@@ -2,6 +2,13 @@
 // author: weed
 // https://gist.github.com/1862354
 
+boolean kinect = false;
+
+import SimpleOpenNI.*;
+SimpleOpenNI  context;
+PImage maskImg;
+PImage maskedImg;
+
 // firmata(2012.2.25 t.uehara)
 import processing.serial.*;
 import cc.arduino.*;
@@ -104,7 +111,7 @@ class FallingRectangle {
       // 輪の中にうまく入った場合
       x <= hRct.x & hRct.x + hRct.width <= x + this.width
       ) 
-      {    
+      {
         //firmata(2012.2.25 t.uehara)
         if(isFallingAroundYou == false){
           arduino.digitalWrite(13,Arduino.HIGH);      
@@ -160,12 +167,74 @@ class HumanRectangle {
   int x;
   int y;
   int width;
+  
+
+  void update() {
+    if(kinect){
+      PVector jointLS = new PVector();
+      context.getJointPositionSkeleton(1, SimpleOpenNI.SKEL_LEFT_SHOULDER,jointLS);
+      PVector convertedJointLS = new PVector();
+      context.convertRealWorldToProjective(jointLS, convertedJointLS);
+      x = (int)convertedJointLS.x;
+      y = (int)convertedJointLS.y; 
+  
+      PVector jointRS = new PVector();
+      context.getJointPositionSkeleton(1, SimpleOpenNI.SKEL_RIGHT_SHOULDER,jointRS);
+      PVector convertedJointRS = new PVector();
+      context.convertRealWorldToProjective(jointRS, convertedJointRS);
+      width = (int)convertedJointRS.x - x;
+      
+      //println("x= " + x + ", y= " + y + ", width= " + this.width);
+    }
+  }
 }
 
 void setup()
 {
-  size(640, 480);
-  background(0);
+  if(kinect){
+    context = new SimpleOpenNI(this);
+    
+    context.setMirror(true);
+    
+    // enable depthMap generation 
+    if(context.enableDepth() == false)
+    {
+       println("Can't open the depthMap, maybe the camera is not connected!"); 
+       exit();
+       return;
+    }
+    
+    // 人物検出を有効にする
+    context.enableScene();
+     
+    // enable skeleton generation for all joints
+    context.enableUser(SimpleOpenNI.SKEL_PROFILE_ALL);
+   
+    // RGBカメラを有効にする
+    if(context.enableRGB() == false)
+    {
+       println("Can't open the rgbMap, maybe the camera is not connected or there is no rgbSensor!"); 
+       exit();
+       return;
+    }
+  
+    // 画像データと深度データの位置合わせをする
+    context.alternativeViewPointDepthToImage();
+  
+    background(0);
+  
+    stroke(0,0,255);
+    strokeWeight(3);
+    smooth();
+    
+    size(context.depthWidth(), context.depthHeight()); 
+  
+  }
+  else{
+    size(640, 480);
+    background(0);
+  }
+
   num = 0;
   fall[num] = new FallingRectangle(width/2 - FALLING_RECTANGLE_WIDTH/2);
 
@@ -193,26 +262,165 @@ void draw()
       fall[num] = new FallingRectangle(oldX);
     }
   }
+    
+  if(kinect){
+    // update the cam
+    context.update();
+    
+    maskImg = makeImgForMask(context.sceneImage());
   
+    maskedImg = context.rgbImage(); // RGBカメラの映像がマスク対象
+    maskedImg.mask(maskImg); // 人物の形で繰り抜いて
+  
+    // 矩形を更新する
+    hRct.update();
+
+  }
+
   fall[num].update(hRct);
 
   // -----
   // 描画
   // -----
-  background(0);
+  
+  if(kinect){
+    image(context.depthImage(),0,0);
+    // 後ろ側の線分を描く
+    fall[num].drawBack();
+  // とりあえずスケルトンを描画する
+  // 最終的には背景をグレースケール、
+  // 人物をフルカラーで描画したい
+  // draw the skeleton if it's available
+  //  stroke(128);
+  //  strokeWeight(20);
+    if(context.isTrackingSkeleton(1))
+  //    drawSkeleton(1);
+    image(maskedImg, 0, 0); // 表示する
     
-  // 後ろ側の線分を描く
-  fall[num].drawBack();
-
-  // 矩形を描く
-  stroke(0, 0, 255);
-  strokeWeight(0);
-  rect(hRct.x, hRct.y, hRct.width, height - hRct.y);
-
+  }else{
+    background(0);
+    // 後ろ側の線分を描く
+    fall[num].drawBack();
+    // 矩形を描く
+    stroke(0, 0, 255);
+    strokeWeight(0);
+    rect(hRct.x, hRct.y, hRct.width, height - hRct.y);
+  }
+    
   // 前側の線分を描く
   fall[num].drawForward();
 }
 
+// draw the skeleton with the selected joints
+void drawSkeleton(int userId)
+{
+  // to get the 3d joint data
+  /*
+  PVector jointPos = new PVector();
+  context.getJointPositionSkeleton(userId,SimpleOpenNI.SKEL_NECK,jointPos);
+  println(jointPos);
+  */
+  
+  context.drawLimb(userId, SimpleOpenNI.SKEL_HEAD, SimpleOpenNI.SKEL_NECK);
+
+  context.drawLimb(userId, SimpleOpenNI.SKEL_NECK, SimpleOpenNI.SKEL_LEFT_SHOULDER);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_SHOULDER, SimpleOpenNI.SKEL_LEFT_ELBOW);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_ELBOW, SimpleOpenNI.SKEL_LEFT_HAND);
+
+  context.drawLimb(userId, SimpleOpenNI.SKEL_NECK, SimpleOpenNI.SKEL_RIGHT_SHOULDER);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_SHOULDER, SimpleOpenNI.SKEL_RIGHT_ELBOW);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_ELBOW, SimpleOpenNI.SKEL_RIGHT_HAND);
+
+  context.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_SHOULDER, SimpleOpenNI.SKEL_TORSO);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_SHOULDER, SimpleOpenNI.SKEL_TORSO);
+
+  context.drawLimb(userId, SimpleOpenNI.SKEL_TORSO, SimpleOpenNI.SKEL_LEFT_HIP);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_HIP, SimpleOpenNI.SKEL_LEFT_KNEE);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_KNEE, SimpleOpenNI.SKEL_LEFT_FOOT);
+
+  context.drawLimb(userId, SimpleOpenNI.SKEL_TORSO, SimpleOpenNI.SKEL_RIGHT_HIP);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_HIP, SimpleOpenNI.SKEL_RIGHT_KNEE);
+  context.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_KNEE, SimpleOpenNI.SKEL_RIGHT_FOOT);  
+}
+
+// -----------------------------------------------------------------
+// SimpleOpenNI events
+
+void onNewUser(int userId)
+{
+  println("onNewUser - userId: " + userId);
+  println("  start pose detection");
+  
+  context.startPoseDetection("Psi",userId);
+}
+
+void onLostUser(int userId)
+{
+  println("onLostUser - userId: " + userId);
+}
+
+void onStartCalibration(int userId)
+{
+  println("onStartCalibration - userId: " + userId);
+}
+
+void onEndCalibration(int userId, boolean successfull)
+{
+  println("onEndCalibration - userId: " + userId + ", successfull: " + successfull);
+  
+  if (successfull) 
+  { 
+    println("  User calibrated !!!");
+    context.startTrackingSkeleton(userId); 
+  } 
+  else 
+  { 
+    println("  Failed to calibrate user !!!");
+    println("  Start pose detection");
+    context.startPoseDetection("Psi",userId);
+  }
+}
+
+void onStartPose(String pose,int userId)
+{
+  println("onStartPose - userId: " + userId + ", pose: " + pose);
+  println(" stop pose detection");
+  
+  context.stopPoseDetection(userId); 
+  context.requestCalibrationSkeleton(userId, true);
+ 
+}
+
+void onEndPose(String pose,int userId)
+{
+  println("onEndPose - userId: " + userId + ", pose: " + pose);
+}
+
+// 深度映像から人物だけを抜き出すようなマスク用画像を返す
+PImage makeImgForMask(PImage img)
+{
+  color cBlack = color(0, 0, 0);
+  color cWhite = color(255, 255, 255);
+
+  for (int x = 0; x < img.width; x++)
+  {
+    for (int y = 0; y < img.height; y++) 
+    {
+      color c = img.get(x, y);
+      // 人が写っていない白、灰色、黒はRGB値が同じ
+      if (red(c) == green(c) & green(c) == blue(c)) 
+      {
+        img.set(x, y, cBlack); // 黒でマスクする
+      }
+      // 何らかの色が付いている部分は人が写っている
+      else
+      {
+        img.set(x, y, cWhite); // 白で人の部分を残す
+      }
+    }
+  }
+  return img;
+}
 
 void keyPressed() {
   switch(keyCode) {
