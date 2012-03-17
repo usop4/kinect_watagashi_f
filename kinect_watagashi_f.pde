@@ -2,20 +2,42 @@
 // author: weed
 // https://gist.github.com/1862354
 
-boolean kinect = false;
+boolean isKinect = false;
+boolean isArduino = false;
+boolean isGamepad = true;//
+
+// kinect関連
 
 import SimpleOpenNI.*;
 SimpleOpenNI  context;
 PImage maskImg;
 PImage maskedImg;
 
-// firmata(2012.2.25 t.uehara)
+// arduino(firmata)関連
+
 import processing.serial.*;
 import cc.arduino.*;
 Arduino arduino;
 
+static final int RPIN = 13;
+static final int GPIN = 12;
+static final int BPIN = 11;
+
+// gamepad関連
+
+import procontroll.*;
+import net.java.games.input.*; 
+
+ControllIO cio;
+ControllDevice gamepad;
+ControllStick stick;
+
+float transX;
+float transY;
+
 // Kinectを使うときは処理が遅くなるので4くらいが推奨
-static final int SLOWNESS = 2; // original : 2
+
+static final int SLOWNESS = 4; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
@@ -112,9 +134,10 @@ class FallingRectangle {
       x <= hRct.x & hRct.x + hRct.width <= x + this.width
       ) 
       {
-        //firmata(2012.2.25 t.uehara)
         if(isFallingAroundYou == false){
-          arduino.digitalWrite(13,Arduino.HIGH);      
+          if(isArduino){
+            arduino.digitalWrite(RPIN,Arduino.HIGH);
+          }
         }
         isFallingAroundYou = true;
         y += SLOWNESS * 4; // x is OK
@@ -157,8 +180,11 @@ class FallingRectangle {
       getCounter = 0;
       y = height + 1;
       println("You get " + clrName + " !");
-      //firmata(2012.2.25 t.uehara)
-      arduino.digitalWrite(13,Arduino.LOW);
+      if(isArduino){
+        arduino.digitalWrite(RPIN,Arduino.LOW);
+        arduino.digitalWrite(GPIN,Arduino.LOW);
+        arduino.digitalWrite(BPIN,Arduino.LOW);
+      }
     }
   }    
 }
@@ -170,7 +196,7 @@ class HumanRectangle {
   
 
   void update() {
-    if(kinect){
+    if(isKinect){
       PVector jointLS = new PVector();
       context.getJointPositionSkeleton(1, SimpleOpenNI.SKEL_LEFT_SHOULDER,jointLS);
       PVector convertedJointLS = new PVector();
@@ -191,7 +217,7 @@ class HumanRectangle {
 
 void setup()
 {
-  if(kinect){
+  if(isKinect){
     context = new SimpleOpenNI(this);
     
     context.setMirror(true);
@@ -238,10 +264,27 @@ void setup()
   num = 0;
   fall[num] = new FallingRectangle(width/2 - FALLING_RECTANGLE_WIDTH/2);
 
-  //firmata(2012.2.25 t.uehara)
-  println(Arduino.list());
-  arduino = new Arduino(this, Arduino.list()[0], 57600);  
-  arduino.pinMode(13, Arduino.OUTPUT);
+  if(isArduino){
+    println(Arduino.list());
+    arduino = new Arduino(this, Arduino.list()[0], 57600);  
+    arduino.pinMode(RPIN, Arduino.OUTPUT);
+    arduino.pinMode(GPIN, Arduino.OUTPUT);
+    arduino.pinMode(BPIN, Arduino.OUTPUT);
+  }
+
+  if(isGamepad){
+    cio = ControllIO.getInstance(this);
+    gamepad = cio.getDevice(2);
+    gamepad.plug(this,"RButtonPress",cio.ON_PRESS,0);
+    gamepad.plug(this,"RButtonRelease",cio.ON_RELEASE,0);
+    gamepad.plug(this,"GButtonPress",cio.ON_PRESS,2);
+    gamepad.plug(this,"GButtonRelease",cio.ON_RELEASE,2);
+    gamepad.plug(this,"BButtonPress",cio.ON_PRESS,3);
+    gamepad.plug(this,"BButtonRelease",cio.ON_RELEASE,3);
+    stick = gamepad.getStick(0);
+    stick.setTolerance(0.1f);
+    stick.setMultiplier(5.0f);
+  }
 
   hRct.width = 100;
   hRct.y = 200;
@@ -250,6 +293,8 @@ void setup()
 
 void draw()
 {
+  
+  
   // 一番下まで来たら上に戻す
   if (fall[num].y > height) {
     if ( fall[num].isFallingAroundYou ) {
@@ -262,8 +307,12 @@ void draw()
       fall[num] = new FallingRectangle(oldX);
     }
   }
+
+  if(isGamepad){
+    hRct.x = (int)stick.getTotalX();
+  }
     
-  if(kinect){
+  if(isKinect){
     // update the cam
     context.update();
     
@@ -283,7 +332,7 @@ void draw()
   // 描画
   // -----
   
-  if(kinect){
+  if(isKinect){
     image(context.depthImage(),0,0);
     // 後ろ側の線分を描く
     fall[num].drawBack();
@@ -432,3 +481,36 @@ void keyPressed() {
     break;  
   }
 }
+
+void RButtonPress(){
+  if(isArduino){
+    arduino.digitalWrite(RPIN,Arduino.HIGH);
+  }
+};
+void RButtonRelease(){
+  if(isArduino){
+    arduino.digitalWrite(RPIN,Arduino.LOW);
+  }
+};
+
+void GButtonPress(){
+  if(isArduino){
+    arduino.digitalWrite(GPIN,Arduino.HIGH);
+  }
+};
+void GButtonRelease(){
+  if(isArduino){
+    arduino.digitalWrite(GPIN,Arduino.LOW);
+  }
+};
+
+void BButtonPress(){
+  if(isArduino){
+    arduino.digitalWrite(BPIN,Arduino.HIGH);
+  }
+};
+void BButtonRelease(){
+  if(isArduino){
+    arduino.digitalWrite(BPIN,Arduino.LOW);
+  }
+};
