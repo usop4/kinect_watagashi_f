@@ -300,7 +300,7 @@ void setup()
   }
 
   hRct.width = 100;
-  hRct.y = 200;
+  hRct.y = 300;// original:200
   hRct.x = width/2 - hRct.width/2;
 }
 
@@ -338,7 +338,7 @@ void draw()
 
   }
 
- 
+  fall[num].update(hRct); 
 
   // -----
   // 描画
