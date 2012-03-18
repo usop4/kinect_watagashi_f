@@ -3,7 +3,7 @@
 // https://gist.github.com/1862354
 
 boolean isKinect = false;
-boolean isArduino = false;
+boolean isArduino = true;
 boolean isGamepad = true;//
 
 // kinect関連
@@ -14,6 +14,7 @@ PImage maskImg;
 PImage maskedImg;
 
 // arduino(firmata)関連
+// on Arduino use SimpleDigitalFirmata.pde
 
 import processing.serial.*;
 import cc.arduino.*;
@@ -37,7 +38,7 @@ float transY;
 
 // Kinectを使うときは処理が遅くなるので4くらいが推奨
 
-static final int SLOWNESS = 4; // original : 2
+static final int SLOWNESS = 3; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
@@ -74,7 +75,7 @@ class FallingRectangle {
     x = newX;
 
     switch((int)random(3)) {
-      case 0: 
+      case 0:
         clr = color(255, 0, 0);
         clrName = "red";
         break;
@@ -136,7 +137,15 @@ class FallingRectangle {
       {
         if(isFallingAroundYou == false){
           if(isArduino){
-            arduino.digitalWrite(RPIN,Arduino.HIGH);
+            if(clrName == "red"){
+              arduino.digitalWrite(RPIN,Arduino.HIGH);
+            }
+            if(clrName == "green"){
+              arduino.digitalWrite(GPIN,Arduino.HIGH);
+            }
+            if(clrName == "blue"){
+              arduino.digitalWrite(BPIN,Arduino.HIGH);
+            }
           }
         }
         isFallingAroundYou = true;
@@ -193,7 +202,6 @@ class HumanRectangle {
   int x;
   int y;
   int width;
-  
 
   void update() {
     if(isKinect){
@@ -270,17 +278,22 @@ void setup()
     arduino.pinMode(RPIN, Arduino.OUTPUT);
     arduino.pinMode(GPIN, Arduino.OUTPUT);
     arduino.pinMode(BPIN, Arduino.OUTPUT);
+    arduino.digitalWrite(RPIN,Arduino.LOW);
+    arduino.digitalWrite(GPIN,Arduino.LOW);
+    arduino.digitalWrite(BPIN,Arduino.LOW);
   }
 
   if(isGamepad){
     cio = ControllIO.getInstance(this);
     gamepad = cio.getDevice(2);
+    //gamepadのボタンに機能を割り当てる
     gamepad.plug(this,"RButtonPress",cio.ON_PRESS,0);
     gamepad.plug(this,"RButtonRelease",cio.ON_RELEASE,0);
     gamepad.plug(this,"GButtonPress",cio.ON_PRESS,2);
     gamepad.plug(this,"GButtonRelease",cio.ON_RELEASE,2);
     gamepad.plug(this,"BButtonPress",cio.ON_PRESS,3);
     gamepad.plug(this,"BButtonRelease",cio.ON_RELEASE,3);
+    //十字キーの挙動を設定する
     stick = gamepad.getStick(0);
     stick.setTolerance(0.1f);
     stick.setMultiplier(5.0f);
@@ -321,12 +334,11 @@ void draw()
     maskedImg = context.rgbImage(); // RGBカメラの映像がマスク対象
     maskedImg.mask(maskImg); // 人物の形で繰り抜いて
   
-    // 矩形を更新する
-    hRct.update();
+    hRct.update();          // 矩形を更新する
 
   }
 
-  fall[num].update(hRct);
+ 
 
   // -----
   // 描画
