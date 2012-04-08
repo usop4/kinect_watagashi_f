@@ -358,6 +358,7 @@ void draw()
     frame++;
     if (frame >= 300) {
       isOpening = false;
+      frame = 0;
     }
   } else {
   
