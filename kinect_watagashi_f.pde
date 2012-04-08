@@ -3,8 +3,8 @@
 // https://gist.github.com/1862354
 
 boolean isKinect = false;
-boolean isArduino = true;
-boolean isGamepad = true;//
+boolean isArduino = false;
+boolean isGamepad = false;//
 
 // kinect関連
 
@@ -38,14 +38,31 @@ float transY;
 
 // Kinectを使うときは処理が遅くなるので4くらいが推奨
 
-static final int SLOWNESS = 3; // original : 2
+static final int SLOWNESS = 2; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
+static final int FALLING_RECTANGLE_NUMBER = 50;
 
-FallingRectangle[] fall = new FallingRectangle[50];
+FallingRectangle[] fall = new FallingRectangle[FALLING_RECTANGLE_NUMBER];
 HumanRectangle hRct = new HumanRectangle();
 int num;
+
+// around Opening
+
+PImage calibImg;
+boolean isOpening = false;
+int frame = 0;
+
+// Around Waiting
+
+boolean isWaiting = true;
+int rectX, rectY;      // Position of square button
+int rectSize = 100;     // Diameter of rect
+color rectColor, circleColor, baseColor;
+color rectHighlight, circleHighlight;
+color currentColor;
+boolean rectOver = false;
 
 // -----
 // FallingRectangle
@@ -268,7 +285,7 @@ void setup()
     size(640, 480);
     background(0);
   }
-
+  
   num = 0;
   fall[num] = new FallingRectangle(width/2 - FALLING_RECTANGLE_WIDTH/2);
 
@@ -302,74 +319,118 @@ void setup()
   hRct.width = 100;
   hRct.y = 300;// original:200
   hRct.x = width/2 - hRct.width/2;
+
+  // Around Waiting
+  rectColor = color(0);
+  rectHighlight = color(51);
+  baseColor = color(102);
+  currentColor = baseColor;
+  rectX = width/2-rectSize/2;
+  rectY = height/2-rectSize/2;
+
+  // Around Opening
+  calibImg = loadImage("calibration-pose.png");
+  
 }
 
 void draw()
 {
-  
-  
-  // 一番下まで来たら上に戻す
-  if (fall[num].y > height) {
-    if ( fall[num].isFallingAroundYou ) {
-      fall[num].drawScoringVE();
-      return;
+  if (isWaiting) {
+    updateMouse(mouseX, mouseY);
+    background(currentColor);
+    
+    if(rectOver) {
+      fill(rectHighlight);
+    } else {
+      fill(rectColor);
     }
-    int oldX = fall[num].x;
-    num++;
-    if (num < 50) {
-      fall[num] = new FallingRectangle(oldX);
+    stroke(255);
+    rect(rectX, rectY, rectSize, rectSize);
+  }
+  else if (isOpening) {
+    if (frame % 60 < 30) {
+      background(0);
+      image(calibImg, 200, 50);
+    } else {
+      background(0);
     }
-  }
-
-  if(isGamepad){
-    hRct.x = (int)stick.getTotalX();
-  }
-    
-  if(isKinect){
-    // update the cam
-    context.update();
-    
-    maskImg = makeImgForMask(context.sceneImage());
+    frame++;
+    if (frame >= 300) {
+      isOpening = false;
+    }
+  } else {
   
-    maskedImg = context.rgbImage(); // RGBカメラの映像がマスク対象
-    maskedImg.mask(maskImg); // 人物の形で繰り抜いて
+    // 一番下まで来たら上に戻す
+    if (fall[num].y > height) {
+      if ( fall[num].isFallingAroundYou ) {
+        fall[num].drawScoringVE();
+        return;
+      }
+      int oldX = fall[num].x;
+      num++;
+      if (num < FALLING_RECTANGLE_NUMBER) {
+        fall[num] = new FallingRectangle(oldX);
+      } else {
+
+
+        
+        // TODO  ending procedure
+
+
+
+      }
+    }
   
-    hRct.update();          // 矩形を更新する
-
-  }
-
-  fall[num].update(hRct); 
-
-  // -----
-  // 描画
-  // -----
+    if(isGamepad){
+      hRct.x = (int)stick.getTotalX();
+    }
+      
+    if(isKinect){
+      // update the cam
+      context.update();
+      
+      maskImg = makeImgForMask(context.sceneImage());
+    
+      maskedImg = context.rgbImage(); // RGBカメラの映像がマスク対象
+      maskedImg.mask(maskImg); // 人物の形で繰り抜いて
+    
+      hRct.update();          // 矩形を更新する
   
-  if(isKinect){
-    image(context.depthImage(),0,0);
-    // 後ろ側の線分を描く
-    fall[num].drawBack();
-  // とりあえずスケルトンを描画する
-  // 最終的には背景をグレースケール、
-  // 人物をフルカラーで描画したい
-  // draw the skeleton if it's available
-  //  stroke(128);
-  //  strokeWeight(20);
-    if(context.isTrackingSkeleton(1))
-  //    drawSkeleton(1);
-    image(maskedImg, 0, 0); // 表示する
+    }
+  
+    fall[num].update(hRct); 
+  
+    // -----
+    // 描画
+    // -----
     
-  }else{
-    background(0);
-    // 後ろ側の線分を描く
-    fall[num].drawBack();
-    // 矩形を描く
-    stroke(0, 0, 255);
-    strokeWeight(0);
-    rect(hRct.x, hRct.y, hRct.width, height - hRct.y);
+    if(isKinect){
+      image(context.depthImage(),0,0);
+      // 後ろ側の線分を描く
+      fall[num].drawBack();
+    // とりあえずスケルトンを描画する
+    // 最終的には背景をグレースケール、
+    // 人物をフルカラーで描画したい
+    // draw the skeleton if it's available
+    //  stroke(128);
+    //  strokeWeight(20);
+      if(context.isTrackingSkeleton(1))
+    //    drawSkeleton(1);
+      image(maskedImg, 0, 0); // 表示する
+      
+    }else{
+      background(0);
+      // 後ろ側の線分を描く
+      fall[num].drawBack();
+      // 矩形を描く
+      stroke(0, 0, 255);
+      strokeWeight(0);
+      rect(hRct.x, hRct.y, hRct.width, height - hRct.y);
+    }
+      
+    // 前側の線分を描く
+    fall[num].drawForward();
   }
-    
-  // 前側の線分を描く
-  fall[num].drawForward();
 }
 
 // draw the skeleton with the selected joints
@@ -526,3 +587,31 @@ void BButtonRelease(){
     arduino.digitalWrite(BPIN,Arduino.LOW);
   }
 };
+
+void updateMouse(int x, int y)
+{
+  if ( overRect(rectX, rectY, rectSize, rectSize) ) {
+    rectOver = true;
+  } else {
+    rectOver = false;
+  }
+}
+
+void mousePressed()
+{
+  if(rectOver) {
+    isWaiting = false;
+    isOpening = true;
+  }
+}
+
+boolean overRect(int x, int y, int width, int height) 
+{
+  if (mouseX >= x && mouseX <= x+width && 
+      mouseY >= y && mouseY <= y+height) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
