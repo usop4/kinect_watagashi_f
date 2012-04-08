@@ -356,22 +356,42 @@ void draw()
     rect(rectX, rectY, rectWidth, rectHeight);
     fill(255);
     text("はじめます", rectX + 20, rectY + 65);
-  }
-  else if (isOpening) {
-    // 1 second is 60 frames
-    if (frame % 60 < 30) {
-      background(0);
-      image(calibImg, 200, 50);
-    } else {
-      background(0);
+//  } else if (isOpening) {
+//    // 1 second is 60 frames
+//    if (frame % 60 < 30) {
+//      background(0);
+//      image(calibImg, 200, 50);
+//    } else {
+//      background(0);
+//    }
+//    frame++;
+//    if (frame >= 300) {
+//      isOpening = false;
+//      frame = 0;
+//    }
+  } 
+  else if (isFindingUser) 
+  {
+    if(isKinect){
+      context.update();
+      image(context.depthImage(),0,0);
+      fill(230, 0, 130);
+      text("おまちください", rectX , rectY + 65);
     }
-    frame++;
-    if (frame >= 300) {
-      isOpening = false;
-      frame = 0;
+  } 
+  else if (isCalibrating) 
+  {
+    if(isKinect){
+      context.update();
+      image(context.depthImage(),0,0);
+      fill(230, 0, 130);
+      text("りょうて　ちからこぶの　ポーズ", rectX - 150 , rectY + 65);
     }
-  } else {
-  
+  } 
+  else if (isPlaying) 
+  {
+      
+
     // 一番下まで来たら上に戻す
     if (fall[num].y > height) {
       if ( fall[num].isFallingAroundYou ) {
@@ -613,7 +633,7 @@ void mousePressed()
 {
   if(rectOver) {
     isWaiting = false;
-    isOpening = true;
+    isFindingUser = true;
   }
 }
 
