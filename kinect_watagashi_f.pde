@@ -42,7 +42,7 @@ static final int SLOWNESS = 2; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
-static final int FALLING_RECTANGLE_NUMBER = 50;
+static final int FALLING_RECTANGLE_NUMBER = 10;
 
 FallingRectangle[] fall = new FallingRectangle[FALLING_RECTANGLE_NUMBER];
 HumanRectangle hRct = new HumanRectangle();
@@ -348,6 +348,7 @@ void draw()
     rect(rectX, rectY, rectSize, rectSize);
   }
   else if (isOpening) {
+    // 1 second is 60 frames
     if (frame % 60 < 30) {
       background(0);
       image(calibImg, 200, 50);
@@ -371,13 +372,7 @@ void draw()
       if (num < FALLING_RECTANGLE_NUMBER) {
         fall[num] = new FallingRectangle(oldX);
       } else {
-
-
-        
-        // TODO  ending procedure
-
-
-
+        isWaiting = true;
       }
     }
   
@@ -425,6 +420,7 @@ void draw()
       // 矩形を描く
       stroke(0, 0, 255);
       strokeWeight(0);
+      fill(255, 255, 255);
       rect(hRct.x, hRct.y, hRct.width, height - hRct.y);
     }
       
