@@ -384,6 +384,12 @@ void draw()
     if(isKinect){
       context.update();
       image(context.depthImage(),0,0);
+      // 1 second is 60 frames
+      if (frame % 60 < 30) {
+        background(0);
+        image(calibImg, 200, 50);
+      } 
+      frame++;
       fill(230, 0, 130);
       text("りょうて　ちからこぶの　ポーズ", rectX - 150 , rectY + 65);
     }
