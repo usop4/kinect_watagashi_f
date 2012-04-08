@@ -53,12 +53,17 @@ int num;
 PImage calibImg;
 boolean isOpening = false;
 int frame = 0;
+PFont font;
+boolean isFindingUser = false;
+boolean isCalibrating = false;
+boolean isPlaying = false;
 
 // Around Waiting
 
 boolean isWaiting = true;
 int rectX, rectY;      // Position of square button
-int rectSize = 100;     // Diameter of rect
+int rectHeight = 100;     // Diameter of rect
+int rectWidth = 200;     // Diameter of rect
 color rectColor, circleColor, baseColor;
 color rectHighlight, circleHighlight;
 color currentColor;
@@ -325,12 +330,13 @@ void setup()
   rectHighlight = color(51);
   baseColor = color(102);
   currentColor = baseColor;
-  rectX = width/2-rectSize/2;
-  rectY = height/2-rectSize/2;
+  rectX = width/2-rectWidth/2;
+  rectY = height/2-rectHeight/2;
 
   // Around Opening
   calibImg = loadImage("calibration-pose.png");
-  
+  font = loadFont("Osaka-48.vlw");
+  textFont(font, 32);
 }
 
 void draw()
@@ -344,8 +350,12 @@ void draw()
     } else {
       fill(rectColor);
     }
+    stroke(0, 0, 255);
+    strokeWeight(0);
     stroke(255);
-    rect(rectX, rectY, rectSize, rectSize);
+    rect(rectX, rectY, rectWidth, rectHeight);
+    fill(255);
+    text("はじめます", rectX + 20, rectY + 65);
   }
   else if (isOpening) {
     // 1 second is 60 frames
@@ -393,9 +403,6 @@ void draw()
     if (num >= FALLING_RECTANGLE_NUMBER - 1) {
       num = 0;
       isWaiting = true;
-      stroke(0, 0, 255);
-      strokeWeight(0);
-      fill(255, 255, 255);
       return;
     }
     fall[num].update(hRct); 
@@ -475,6 +482,8 @@ void onNewUser(int userId)
   println("  start pose detection");
   
   context.startPoseDetection("Psi",userId);
+  isFindingUser = false;
+  isCalibrating = true;
 }
 
 void onLostUser(int userId)
@@ -495,6 +504,8 @@ void onEndCalibration(int userId, boolean successfull)
   { 
     println("  User calibrated !!!");
     context.startTrackingSkeleton(userId); 
+    isCalibrating = false;
+    isPlaying = true;
   } 
   else 
   { 
@@ -591,7 +602,7 @@ void BButtonRelease(){
 
 void updateMouse(int x, int y)
 {
-  if ( overRect(rectX, rectY, rectSize, rectSize) ) {
+  if ( overRect(rectX, rectY, rectWidth, rectHeight) ) {
     rectOver = true;
   } else {
     rectOver = false;
