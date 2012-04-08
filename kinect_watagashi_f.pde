@@ -2,7 +2,7 @@
 // author: weed
 // https://gist.github.com/1862354
 
-boolean isKinect = false;
+boolean isKinect = true;
 boolean isArduino = false;
 boolean isGamepad = false;//
 
@@ -38,7 +38,7 @@ float transY;
 
 // Kinectを使うときは処理が遅くなるので4くらいが推奨
 
-static final int SLOWNESS = 2; // original : 2
+static final int SLOWNESS = 4; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
@@ -369,11 +369,7 @@ void draw()
       }
       int oldX = fall[num].x;
       num++;
-      if (num < FALLING_RECTANGLE_NUMBER) {
-        fall[num] = new FallingRectangle(oldX);
-      } else {
-        isWaiting = true;
-      }
+      fall[num] = new FallingRectangle(oldX);
     }
   
     if(isGamepad){
@@ -393,6 +389,14 @@ void draw()
   
     }
   
+    if (num >= FALLING_RECTANGLE_NUMBER - 1) {
+      num = 0;
+      isWaiting = true;
+      stroke(0, 0, 255);
+      strokeWeight(0);
+      fill(255, 255, 255);
+      return;
+    }
     fall[num].update(hRct); 
   
     // -----
