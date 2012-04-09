@@ -2,7 +2,7 @@
 // author: weed
 // https://gist.github.com/1862354
 
-boolean isKinect = true;
+boolean isKinect = false;
 boolean isArduino = false;
 boolean isGamepad = false;//
 
@@ -51,12 +51,14 @@ int num;
 // around Opening
 
 PImage calibImg;
-boolean isOpening = false;
+boolean isInitializing = false;
 int frame = 0;
 PFont font;
 boolean isFindingUser = false;
 boolean isCalibrating = false;
 boolean isPlaying = false;
+boolean isAfterPlay = false;
+boolean isAfterPlay2 = false;
 
 // Around Waiting
 
@@ -370,11 +372,21 @@ void draw()
 //      frame = 0;
 //    }
   } 
+  else if (isInitializing) 
+  {
+    background(0);
+    fill(230, 0, 130);
+    text("おまちください", rectX , rectY + 65);
+    isInitializing = false;
+    isFindingUser = true;
+  } 
   else if (isFindingUser) 
   {
     if(isKinect){
       context.update();
       image(context.depthImage(),0,0);
+      fill(0);
+      text("おまちください", rectX + 2 , rectY + 67);
       fill(230, 0, 130);
       text("おまちください", rectX , rectY + 65);
     }
@@ -386,10 +398,11 @@ void draw()
       image(context.depthImage(),0,0);
       // 1 second is 60 frames
       if (frame % 60 < 30) {
-        background(0);
         image(calibImg, 200, 50);
       } 
       frame++;
+      fill(0);
+      text("りょうて　ちからこぶの　ポーズ", rectX - 148 , rectY + 67);
       fill(230, 0, 130);
       text("りょうて　ちからこぶの　ポーズ", rectX - 150 , rectY + 65);
     }
@@ -428,7 +441,13 @@ void draw()
   
     if (num >= FALLING_RECTANGLE_NUMBER - 1) {
       num = 0;
-      isWaiting = true;
+      isPlaying = false;
+      if (isKinect) {
+        isAfterPlay = true;
+      } else {
+        isAfterPlay2 = true;
+      }
+      frame = 0;
       return;
     }
     fall[num].update(hRct); 
@@ -464,6 +483,33 @@ void draw()
       
     // 前側の線分を描く
     fall[num].drawForward();
+    
+  } else if (isAfterPlay) {
+    // update the cam
+    context.update();
+    image(context.depthImage(),0,0);
+    fill(0);
+    text("おつかれさまでした", rectX - 48 , rectY + 67);
+    fill(230, 0, 130);
+    text("おつかれさまでした", rectX - 50 , rectY + 65);
+    // 1 second is 60 frames
+    frame++;
+    if (frame >= 600 / SLOWNESS) {
+      isAfterPlay = false;
+      isAfterPlay2 = true;
+      frame = 0;
+    }
+  } else if (isAfterPlay2) {
+    background(0);
+    fill(230, 0, 130);
+    text("おつかれさまでした", rectX - 50 , rectY + 65);
+    // 1 second is 60 frames
+    frame++;
+    if (frame >= 300) {
+      isAfterPlay2 = false;
+      isWaiting = true;
+      frame = 0;
+    }
   }
 }
 
@@ -639,7 +685,11 @@ void mousePressed()
 {
   if(rectOver) {
     isWaiting = false;
-    isFindingUser = true;
+    if(isKinect) {
+      isInitializing = true;
+    } else {
+      isPlaying = true;
+    }
   }
 }
 
