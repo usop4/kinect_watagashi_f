@@ -231,14 +231,14 @@ class HumanRectangle {
   void update() {
     if(isKinect){
       PVector jointLS = new PVector();
-      context.getJointPositionSkeleton(1, SimpleOpenNI.SKEL_LEFT_SHOULDER,jointLS);
+      context.getJointPositionSkeleton(currentUserId, SimpleOpenNI.SKEL_LEFT_SHOULDER,jointLS);
       PVector convertedJointLS = new PVector();
       context.convertRealWorldToProjective(jointLS, convertedJointLS);
       x = (int)convertedJointLS.x;
       y = (int)convertedJointLS.y; 
   
       PVector jointRS = new PVector();
-      context.getJointPositionSkeleton(1, SimpleOpenNI.SKEL_RIGHT_SHOULDER,jointRS);
+      context.getJointPositionSkeleton(currentUserId, SimpleOpenNI.SKEL_RIGHT_SHOULDER,jointRS);
       PVector convertedJointRS = new PVector();
       context.convertRealWorldToProjective(jointRS, convertedJointRS);
       width = (int)convertedJointRS.x - x;
@@ -454,7 +454,7 @@ void draw()
     // draw the skeleton if it's available
     //  stroke(128);
     //  strokeWeight(20);
-      if(context.isTrackingSkeleton(1))
+      if(context.isTrackingSkeleton(currentUserId))
     //    drawSkeleton(1);
       image(maskedImg, 0, 0); // 表示する
       
@@ -546,6 +546,7 @@ void onNewUser(int userId)
   println("  start pose detection");
   
   context.startPoseDetection("Psi",userId);
+  
   currentUserId = userId;
   println("currentUserId: " + currentUserId);
   isFindingUser = false;
@@ -558,7 +559,9 @@ void onLostUser(int userId)
   if ( userId == currentUserId ) {
     isPlaying = false;
     isInitializing = true;
-    println("onLostUser - currentUserId: " + currentUserId);
+    println("userId is currentUserId: " + currentUserId);
+  } else {
+    println("userId is not currentId: " + currentUserId);
   }
 }
 
