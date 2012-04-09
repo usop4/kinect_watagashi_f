@@ -2,7 +2,7 @@
 // author: weed
 // https://gist.github.com/1862354
 
-boolean isKinect = false;
+boolean isKinect = true;
 boolean isArduino = false;
 boolean isGamepad = false;//
 
@@ -59,6 +59,7 @@ boolean isCalibrating = false;
 boolean isPlaying = false;
 boolean isAfterPlay = false;
 boolean isAfterPlay2 = false;
+int currentUserId = 1;
 
 // Around Waiting
 
@@ -358,19 +359,6 @@ void draw()
     rect(rectX, rectY, rectWidth, rectHeight);
     fill(255);
     text("はじめます", rectX + 20, rectY + 65);
-//  } else if (isOpening) {
-//    // 1 second is 60 frames
-//    if (frame % 60 < 30) {
-//      background(0);
-//      image(calibImg, 200, 50);
-//    } else {
-//      background(0);
-//    }
-//    frame++;
-//    if (frame >= 300) {
-//      isOpening = false;
-//      frame = 0;
-//    }
   } 
   else if (isInitializing) 
   {
@@ -484,7 +472,9 @@ void draw()
     // 前側の線分を描く
     fall[num].drawForward();
     
-  } else if (isAfterPlay) {
+  } 
+  else if (isAfterPlay) 
+  {
     // update the cam
     context.update();
     image(context.depthImage(),0,0);
@@ -499,7 +489,9 @@ void draw()
       isAfterPlay2 = true;
       frame = 0;
     }
-  } else if (isAfterPlay2) {
+  } 
+  else if (isAfterPlay2) 
+  {
     background(0);
     fill(230, 0, 130);
     text("おつかれさまでした", rectX - 50 , rectY + 65);
@@ -554,6 +546,8 @@ void onNewUser(int userId)
   println("  start pose detection");
   
   context.startPoseDetection("Psi",userId);
+  currentUserId = userId;
+  println("currentUserId: " + currentUserId);
   isFindingUser = false;
   isCalibrating = true;
 }
@@ -561,6 +555,11 @@ void onNewUser(int userId)
 void onLostUser(int userId)
 {
   println("onLostUser - userId: " + userId);
+  if ( userId == currentUserId ) {
+    isPlaying = false;
+    isInitializing = true;
+    println("onLostUser - currentUserId: " + currentUserId);
+  }
 }
 
 void onStartCalibration(int userId)
