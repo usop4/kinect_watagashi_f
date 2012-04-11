@@ -42,7 +42,7 @@ static final int SLOWNESS = 4; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
-static final int FALLING_RECTANGLE_NUMBER = 10;
+static final int FALLING_RECTANGLE_NUMBER = 20;
 
 FallingRectangle[] fall = new FallingRectangle[FALLING_RECTANGLE_NUMBER];
 HumanRectangle hRct = new HumanRectangle();
@@ -60,6 +60,7 @@ boolean isPlaying = false;
 boolean isAfterPlay = false;
 boolean isAfterPlay2 = false;
 int currentUserId = 1;
+int VeTime = 24;
 
 // Around Waiting
 
@@ -71,6 +72,7 @@ color rectColor, circleColor, baseColor;
 color rectHighlight, circleHighlight;
 color currentColor;
 boolean rectOver = false;
+color colorBefore;
 
 // -----
 // FallingRectangle
@@ -204,8 +206,19 @@ class FallingRectangle {
     line(x, y, x + width, y);
   }
   
-  void drawScoringVE() {
-    if ( getCounter < (24 / SLOWNESS)) {
+  void drawScoringVE(boolean isHandUp) {
+    if ( getCounter < (18 / SLOWNESS)) {
+      weight += SLOWNESS * 50;
+      getCounter++;
+      y = height;
+    } else if (isHandUp && getCounter < (36 / SLOWNESS)) {
+      colorBefore = clr;
+      clr = color(255, 255, 255);
+      weight += SLOWNESS * 50;
+      getCounter++;
+      y = height;
+    } else if (isHandUp && getCounter < (54 / SLOWNESS)) {
+      clr = colorBefore;
       weight += SLOWNESS * 50;
       getCounter++;
       y = height;
@@ -226,6 +239,8 @@ class FallingRectangle {
 class HumanRectangle {
   int x;
   int y;
+  int ry;
+  int ly;
   int width;
 
   void update() {
@@ -243,6 +258,17 @@ class HumanRectangle {
       context.convertRealWorldToProjective(jointRS, convertedJointRS);
       width = (int)convertedJointRS.x - x;
       
+      PVector jointRH = new PVector();
+      context.getJointPositionSkeleton(currentUserId, SimpleOpenNI.SKEL_RIGHT_HAND,jointRH);
+      PVector convertedJointRH = new PVector();
+      context.convertRealWorldToProjective(jointRH, convertedJointRH);
+      ry = (int)convertedJointRH.y;
+
+      PVector jointLH = new PVector();
+      context.getJointPositionSkeleton(currentUserId, SimpleOpenNI.SKEL_LEFT_HAND,jointLH);
+      PVector convertedJointLH = new PVector();
+      context.convertRealWorldToProjective(jointLH, convertedJointLH);
+      ly = (int)convertedJointLH.y;
       //println("x= " + x + ", y= " + y + ", width= " + this.width);
     }
   }
@@ -397,12 +423,16 @@ void draw()
   } 
   else if (isPlaying) 
   {
-      
-
     // 一番下まで来たら上に戻す
     if (fall[num].y > height) {
       if ( fall[num].isFallingAroundYou ) {
-        fall[num].drawScoringVE();
+        if (hRct.y > hRct.ry && hRct.y > hRct.ly) { // Hands Up !!!
+          fall[num].drawScoringVE(true);
+        }
+        else // Normal
+        {
+        fall[num].drawScoringVE(false);
+        }
         return;
       }
       int oldX = fall[num].x;
@@ -547,7 +577,6 @@ void onNewUser(int userId)
   
   context.startPoseDetection("Psi",userId);
   
-  currentUserId = userId;
   println("currentUserId: " + currentUserId);
   isFindingUser = false;
   isCalibrating = true;
@@ -578,6 +607,7 @@ void onEndCalibration(int userId, boolean successfull)
   { 
     println("  User calibrated !!!");
     context.startTrackingSkeleton(userId); 
+    currentUserId = userId;
     isCalibrating = false;
     isPlaying = true;
   } 
