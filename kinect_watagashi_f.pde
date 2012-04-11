@@ -3,8 +3,8 @@
 // https://gist.github.com/1862354
 
 boolean isKinect = true;
-boolean isArduino = false;
-boolean isGamepad = false;//
+boolean isArduino = true;
+boolean isGamepad = true;//
 
 // kinect関連
 
@@ -20,9 +20,9 @@ import processing.serial.*;
 import cc.arduino.*;
 Arduino arduino;
 
-static final int RPIN = 13;
-static final int GPIN = 12;
-static final int BPIN = 11;
+static final int RPIN = 12;
+static final int GPIN = 11;
+static final int BPIN = 10;
 
 // gamepad関連
 
@@ -336,14 +336,15 @@ void setup()
 
   if(isGamepad){
     cio = ControllIO.getInstance(this);
+    cio.printDevices();
     gamepad = cio.getDevice(2);
     //gamepadのボタンに機能を割り当てる
     gamepad.plug(this,"RButtonPress",cio.ON_PRESS,0);
     gamepad.plug(this,"RButtonRelease",cio.ON_RELEASE,0);
-    gamepad.plug(this,"GButtonPress",cio.ON_PRESS,2);
-    gamepad.plug(this,"GButtonRelease",cio.ON_RELEASE,2);
-    gamepad.plug(this,"BButtonPress",cio.ON_PRESS,3);
-    gamepad.plug(this,"BButtonRelease",cio.ON_RELEASE,3);
+    gamepad.plug(this,"GButtonPress",cio.ON_PRESS,3);
+    gamepad.plug(this,"GButtonRelease",cio.ON_RELEASE,3);
+    gamepad.plug(this,"BButtonPress",cio.ON_PRESS,2);
+    gamepad.plug(this,"BButtonRelease",cio.ON_RELEASE,2);
     //十字キーの挙動を設定する
     stick = gamepad.getStick(0);
     stick.setTolerance(0.1f);
@@ -679,6 +680,8 @@ void RButtonPress(){
 void RButtonRelease(){
   if(isArduino){
     arduino.digitalWrite(RPIN,Arduino.LOW);
+    arduino.digitalWrite(GPIN,Arduino.LOW);
+    arduino.digitalWrite(BPIN,Arduino.LOW);
   }
 };
 
@@ -689,7 +692,9 @@ void GButtonPress(){
 };
 void GButtonRelease(){
   if(isArduino){
+    arduino.digitalWrite(RPIN,Arduino.LOW);
     arduino.digitalWrite(GPIN,Arduino.LOW);
+    arduino.digitalWrite(BPIN,Arduino.LOW);
   }
 };
 
@@ -700,6 +705,8 @@ void BButtonPress(){
 };
 void BButtonRelease(){
   if(isArduino){
+    arduino.digitalWrite(RPIN,Arduino.LOW);
+    arduino.digitalWrite(GPIN,Arduino.LOW);
     arduino.digitalWrite(BPIN,Arduino.LOW);
   }
 };
