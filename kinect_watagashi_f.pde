@@ -4,7 +4,7 @@
 
 boolean isKinect = true;
 boolean isArduino = true;
-boolean isGamepad = true;//
+boolean isGamepad = false;//
 
 // kinect関連
 
@@ -42,7 +42,7 @@ static final int SLOWNESS = 4; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
-static final int FALLING_RECTANGLE_NUMBER = 20;
+static final int FALLING_RECTANGLE_NUMBER = 5;
 
 FallingRectangle[] fall = new FallingRectangle[FALLING_RECTANGLE_NUMBER];
 HumanRectangle hRct = new HumanRectangle();
@@ -50,21 +50,26 @@ int num;
 
 // around Opening
 
+int phase;
+static final int PHASE_WAITING = 10;
+static final int PHASE_INITIALIZING = 20;
+static final int PHASE_FINDING_USER = 25;
+static final int PHASE_CALIBRATING = 30;
+static final int PHASE_MUSIC_START = 35;
+static final int PHASE_BEFORE_PLAY = 37;
+static final int PHASE_PLAYING = 40;
+static final int PHASE_MUSIC_END = 45;
+static final int PHASE_AFTER_PLAY1 = 50;
+static final int PHASE_AFTER_PLAY2 = 60;
+
 PImage calibImg;
-boolean isInitializing = false;
 int frame = 0;
 PFont font;
-boolean isFindingUser = false;
-boolean isCalibrating = false;
-boolean isPlaying = false;
-boolean isAfterPlay = false;
-boolean isAfterPlay2 = false;
 int currentUserId = 1;
 int VeTime = 24;
 
 // Around Waiting
 
-boolean isWaiting = true;
 int rectX, rectY;      // Position of square button
 int rectHeight = 100;     // Diameter of rect
 int rectWidth = 200;     // Diameter of rect
@@ -73,6 +78,12 @@ color rectHighlight, circleHighlight;
 color currentColor;
 boolean rectOver = false;
 color colorBefore;
+
+// around Music
+
+import ddf.minim.*;
+AudioPlayer player;
+Minim minim;
 
 // -----
 // FallingRectangle
@@ -367,11 +378,21 @@ void setup()
   calibImg = loadImage("calibration-pose.png");
   font = loadFont("Osaka-48.vlw");
   textFont(font, 32);
+  
+  // around Music
+  minim = new Minim(this);
+  player = minim.loadFile("120412-KinectBGM.mp3", 2048);
+  
+  if (isKinect) {
+    phase = PHASE_INITIALIZING;
+  } else {
+    phase = PHASE_MUSIC_START;
+  }
 }
 
 void draw()
 {
-  if (isWaiting) {
+  if (phase == PHASE_WAITING) {
     updateMouse(mouseX, mouseY);
     background(currentColor);
     
@@ -387,15 +408,14 @@ void draw()
     fill(255);
     text("はじめます", rectX + 20, rectY + 65);
   } 
-  else if (isInitializing) 
+  else if (phase == PHASE_INITIALIZING) 
   {
     background(0);
     fill(230, 0, 130);
     text("おまちください", rectX , rectY + 65);
-    isInitializing = false;
-    isFindingUser = true;
+    phase = PHASE_FINDING_USER;
   } 
-  else if (isFindingUser) 
+  else if (phase == PHASE_FINDING_USER) 
   {
     if(isKinect){
       context.update();
@@ -406,7 +426,7 @@ void draw()
       text("おまちください", rectX , rectY + 65);
     }
   } 
-  else if (isCalibrating) 
+  else if (phase == PHASE_CALIBRATING) 
   {
     if(isKinect){
       context.update();
@@ -422,7 +442,38 @@ void draw()
       text("りょうて　ちからこぶの　ポーズ", rectX - 150 , rectY + 65);
     }
   } 
-  else if (isPlaying) 
+  else if (phase == PHASE_MUSIC_START)
+  {
+    player.play();
+    phase = PHASE_BEFORE_PLAY;
+  }
+  else if (phase == PHASE_BEFORE_PLAY)
+  {
+    if(isKinect){
+      // update the cam
+      context.update();
+      image(context.depthImage(),0,0);
+      
+      maskImg = makeImgForMask(context.sceneImage());
+    
+      maskedImg = context.rgbImage(); // RGBカメラの映像がマスク対象
+      maskedImg.mask(maskImg); // 人物の形で繰り抜いて
+      image(maskedImg, 0, 0); // 表示する
+    } else {
+      background(0);
+      if(isGamepad){
+        hRct.x = (int)stick.getTotalX();
+      }
+      rect(hRct.x, hRct.y, hRct.width, height - hRct.y);
+    }
+    
+    frame++;
+    if (frame >= 600 / SLOWNESS) {
+      phase = PHASE_PLAYING;
+      frame = 0;
+    }
+  }
+  else if (phase == PHASE_PLAYING) 
   {
     // 一番下まで来たら上に戻す
     if (fall[num].y > height) {
@@ -460,12 +511,7 @@ void draw()
   
     if (num >= FALLING_RECTANGLE_NUMBER - 1) {
       num = 0;
-      isPlaying = false;
-      if (isKinect) {
-        isAfterPlay = true;
-      } else {
-        isAfterPlay2 = true;
-      }
+      phase = PHASE_MUSIC_END;
       frame = 0;
       return;
     }
@@ -489,7 +535,7 @@ void draw()
     //    drawSkeleton(1);
       image(maskedImg, 0, 0); // 表示する
       
-    }else{
+    } else {
       background(0);
       // 後ろ側の線分を描く
       fall[num].drawBack();
@@ -504,7 +550,19 @@ void draw()
     fall[num].drawForward();
     
   } 
-  else if (isAfterPlay) 
+  else if (phase == PHASE_MUSIC_END) 
+  {  
+    player.setVolume(0.5); 
+//    player.close();
+//    minim.stop();
+    
+    if (isKinect) {
+      phase = PHASE_AFTER_PLAY1;
+    } else {
+      phase = PHASE_AFTER_PLAY2;
+    }
+  }
+  else if (phase == PHASE_AFTER_PLAY1) 
   {
     // update the cam
     context.update();
@@ -516,23 +574,21 @@ void draw()
     // 1 second is 60 frames
     frame++;
     if (frame >= 600 / SLOWNESS) {
-      isAfterPlay = false;
-      isAfterPlay2 = true;
+      phase = PHASE_AFTER_PLAY2;
       frame = 0;
     }
   } 
-  else if (isAfterPlay2) 
+  else if (phase == PHASE_AFTER_PLAY2) 
   {
     background(0);
     fill(230, 0, 130);
     text("おつかれさまでした", rectX - 50 , rectY + 65);
     // 1 second is 60 frames
-    frame++;
-    if (frame >= 300) {
-      isAfterPlay2 = false;
-      isWaiting = true;
-      frame = 0;
-    }
+//    frame++;
+//    if (frame >= 300) {
+//      phase = PHASE_WAITING;
+//      frame = 0;
+//    }
   }
 }
 
@@ -579,16 +635,14 @@ void onNewUser(int userId)
   context.startPoseDetection("Psi",userId);
   
   println("currentUserId: " + currentUserId);
-  isFindingUser = false;
-  isCalibrating = true;
+  phase = PHASE_CALIBRATING;
 }
 
 void onLostUser(int userId)
 {
   println("onLostUser - userId: " + userId);
   if ( userId == currentUserId ) {
-    isPlaying = false;
-    isInitializing = true;
+    phase = PHASE_INITIALIZING;
     println("userId is currentUserId: " + currentUserId);
   } else {
     println("userId is not currentId: " + currentUserId);
@@ -609,8 +663,7 @@ void onEndCalibration(int userId, boolean successfull)
     println("  User calibrated !!!");
     context.startTrackingSkeleton(userId); 
     currentUserId = userId;
-    isCalibrating = false;
-    isPlaying = true;
+    phase = PHASE_MUSIC_START;
   } 
   else 
   { 
@@ -627,7 +680,6 @@ void onStartPose(String pose,int userId)
   
   context.stopPoseDetection(userId); 
   context.requestCalibrationSkeleton(userId, true);
- 
 }
 
 void onEndPose(String pose,int userId)
@@ -723,11 +775,10 @@ void updateMouse(int x, int y)
 void mousePressed()
 {
   if(rectOver) {
-    isWaiting = false;
     if(isKinect) {
-      isInitializing = true;
+      phase = PHASE_INITIALIZING;
     } else {
-      isPlaying = true;
+      phase = PHASE_MUSIC_START;
     }
   }
 }
