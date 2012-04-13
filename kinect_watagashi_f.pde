@@ -383,11 +383,12 @@ void setup()
   minim = new Minim(this);
   player = minim.loadFile("120412-KinectBGM.mp3", 2048);
   
-  if (isKinect) {
-    phase = PHASE_INITIALIZING;
-  } else {
-    phase = PHASE_MUSIC_START;
-  }
+  phase = PHASE_WAITING;
+//  if (isKinect) {
+//    phase = PHASE_INITIALIZING;
+//  } else {
+//    phase = PHASE_MUSIC_START;
+//  }
 }
 
 void draw()
@@ -552,7 +553,7 @@ void draw()
   } 
   else if (phase == PHASE_MUSIC_END) 
   {  
-    player.setVolume(0.5); 
+//    player.setVolume(0.5); 
 //    player.close();
 //    minim.stop();
     
