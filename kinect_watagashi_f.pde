@@ -2,9 +2,9 @@
 // author: weed
 // https://gist.github.com/1862354
 
-boolean isKinect = true;
+boolean isKinect = false;
 boolean isArduino = true;
-boolean isGamepad = false;//
+boolean isGamepad = true;//
 
 // kinect関連
 
@@ -42,7 +42,7 @@ static final int SLOWNESS = 4; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
-static final int FALLING_RECTANGLE_NUMBER = 5;
+static final int FALLING_RECTANGLE_NUMBER = 10;
 
 FallingRectangle[] fall = new FallingRectangle[FALLING_RECTANGLE_NUMBER];
 HumanRectangle hRct = new HumanRectangle();
@@ -81,9 +81,9 @@ color colorBefore;
 
 // around Music
 
-import ddf.minim.*;
-AudioPlayer player;
-Minim minim;
+//import ddf.minim.*;
+//AudioPlayer player;
+//Minim minim;
 
 // -----
 // FallingRectangle
@@ -126,6 +126,11 @@ class FallingRectangle {
         clr = color(0, 0, 255);
         clrName = "blue";
         break;
+      if(isArduino){
+        arduino.digitalWrite(RPIN,Arduino.LOW);
+        arduino.digitalWrite(GPIN,Arduino.LOW);
+        arduino.digitalWrite(BPIN,Arduino.LOW);
+      }
     }    
   }
 
@@ -348,11 +353,10 @@ void setup()
   if(isGamepad){
     cio = ControllIO.getInstance(this);
     cio.printDevices();
-    gamepad = cio.getDevice(2);
+    gamepad = cio.getDevice(3);
     //gamepadのボタンに機能を割り当てる
     gamepad.plug(this,"RButtonPress",cio.ON_PRESS,0);
     gamepad.plug(this,"RButtonRelease",cio.ON_RELEASE,0);
-    gamepad.plug(this,"GButtonPress",cio.ON_PRESS,3);
     gamepad.plug(this,"GButtonRelease",cio.ON_RELEASE,3);
     gamepad.plug(this,"BButtonPress",cio.ON_PRESS,2);
     gamepad.plug(this,"BButtonRelease",cio.ON_RELEASE,2);
@@ -380,8 +384,8 @@ void setup()
   textFont(font, 32);
   
   // around Music
-  minim = new Minim(this);
-  player = minim.loadFile("120412-KinectBGM.mp3", 2048);
+//  minim = new Minim(this);
+//  player = minim.loadFile("120412-KinectBGM.mp3", 2048);
   
   phase = PHASE_WAITING;
 //  if (isKinect) {
@@ -446,7 +450,8 @@ void draw()
   else if (phase == PHASE_MUSIC_START)
   {
     player.play();
-    phase = PHASE_BEFORE_PLAY;
+//    phase = PHASE_BEFORE_PLAY;
+    phase = PHASE_PLAYING;
   }
   else if (phase == PHASE_BEFORE_PLAY)
   {
@@ -585,11 +590,11 @@ void draw()
     fill(230, 0, 130);
     text("おつかれさまでした", rectX - 50 , rectY + 65);
     // 1 second is 60 frames
-//    frame++;
-//    if (frame >= 300) {
-//      phase = PHASE_WAITING;
-//      frame = 0;
-//    }
+    frame++;
+    if (frame >= 300) {
+      phase = PHASE_WAITING;
+      frame = 0;
+    }
   }
 }
 
