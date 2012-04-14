@@ -4,7 +4,7 @@
 
 boolean isKinect = false;
 boolean isArduino = true;
-boolean isGamepad = false;//
+boolean isGamepad = true;//
 
 // kinect関連
 
@@ -224,6 +224,11 @@ class FallingRectangle {
   }
   
   void drawScoringVE(boolean isHandUp) {
+    if(isArduino){
+      arduino.digitalWrite(RPIN,Arduino.LOW);
+      arduino.digitalWrite(GPIN,Arduino.LOW);
+      arduino.digitalWrite(BPIN,Arduino.LOW);
+    }
     if ( getCounter < (18 / SLOWNESS)) {
       weight += SLOWNESS * 50;
       getCounter++;
@@ -244,11 +249,6 @@ class FallingRectangle {
       getCounter = 0;
       y = height + 1;
       println("You get " + clrName + " !");
-      if(isArduino){
-        arduino.digitalWrite(RPIN,Arduino.LOW);
-        arduino.digitalWrite(GPIN,Arduino.LOW);
-        arduino.digitalWrite(BPIN,Arduino.LOW);
-      }
     }
   }    
 }
@@ -354,7 +354,7 @@ void setup()
   if(isGamepad){
     cio = ControllIO.getInstance(this);
     cio.printDevices();
-    gamepad = cio.getDevice(3);
+    gamepad = cio.getDevice(2);
     //gamepadのボタンに機能を割り当てる
     gamepad.plug(this,"RButtonPress",cio.ON_PRESS,0);
     gamepad.plug(this,"RButtonRelease",cio.ON_RELEASE,0);
@@ -381,8 +381,8 @@ void setup()
 
   // Around Opening
   calibImg = loadImage("calibration-pose.png");
-//  font = loadFont("Osaka-48.vlw");
-  font = loadFont("MS-Gothic-48.vlw");
+  font = loadFont("Osaka-48.vlw");
+//  font = loadFont("MS-Gothic-48.vlw");
   textFont(font, 32);
   
   // around Music
