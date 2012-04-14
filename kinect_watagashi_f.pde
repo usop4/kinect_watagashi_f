@@ -4,7 +4,7 @@
 
 boolean isKinect = false;
 boolean isArduino = true;
-boolean isGamepad = true;//
+boolean isGamepad = false;//
 
 // kinect関連
 
@@ -38,7 +38,7 @@ float transY;
 
 // Kinectを使うときは処理が遅くなるので4くらいが推奨
 
-static final int SLOWNESS = 4; // original : 2
+static final int SLOWNESS = 2; // original : 2
 static final int FALLING_RECTANGLE_WIDTH = 250;
 static final int FALLING_RECTANGLE_WEIGHT = 20;
 static final int FALLING_RECTANGLE_DEPTH = 40;
@@ -126,12 +126,13 @@ class FallingRectangle {
         clr = color(0, 0, 255);
         clrName = "blue";
         break;
-      if(isArduino){
-        arduino.digitalWrite(RPIN,Arduino.LOW);
-        arduino.digitalWrite(GPIN,Arduino.LOW);
-        arduino.digitalWrite(BPIN,Arduino.LOW);
-      }
-    }    
+    }
+
+//    if(isArduino){
+//      arduino.digitalWrite(RPIN,Arduino.LOW);
+//      arduino.digitalWrite(GPIN,Arduino.LOW);
+//      arduino.digitalWrite(BPIN,Arduino.LOW);
+//    }    
   }
 
   void update(HumanRectangle hRct) {
@@ -380,7 +381,8 @@ void setup()
 
   // Around Opening
   calibImg = loadImage("calibration-pose.png");
-  font = loadFont("Osaka-48.vlw");
+//  font = loadFont("Osaka-48.vlw");
+  font = loadFont("MS-Gothic-48.vlw");
   textFont(font, 32);
   
   // around Music
@@ -449,7 +451,7 @@ void draw()
   } 
   else if (phase == PHASE_MUSIC_START)
   {
-    player.play();
+//    player.play();
 //    phase = PHASE_BEFORE_PLAY;
     phase = PHASE_PLAYING;
   }
